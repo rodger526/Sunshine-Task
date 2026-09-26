@@ -12,10 +12,14 @@ class TaskStorage(context: Context) {
         val array = JSONArray()
         tasks.forEach { task ->
             val obj = JSONObject().apply {
-                // ERROR INTENCIONAL 1: Solo se guardan 3 campos, perdiendo id, category, priority, dueDate y createdAt
+                put("id", task.id)
                 put("title", task.title)
                 put("description", task.description)
+                put("category", task.category)
+                put("priority", task.priority.name)
                 put("status", task.status.name)
+                put("dueDate", task.dueDate ?: "")
+                put("createdAt", task.createdAt)
             }
             array.put(obj)
         }
