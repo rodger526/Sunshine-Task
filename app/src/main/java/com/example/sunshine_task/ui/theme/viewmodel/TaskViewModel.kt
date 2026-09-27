@@ -105,7 +105,7 @@ class TaskViewModel : ViewModel() {
 
     fun addTask(title: String, description: String, category: String, priority: Priority, dueDate: String) {
         if (title.isBlank()) {
-            errorMessage = "El título no puede estar vacío (Validación desde ViewModel)"
+            errorMessage = "Título requerido"
             return
         }
         errorMessage = null
