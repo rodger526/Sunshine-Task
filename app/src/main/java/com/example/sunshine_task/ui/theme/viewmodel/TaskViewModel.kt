@@ -120,4 +120,29 @@ class TaskViewModel : ViewModel() {
         )
         tasks = tasks + newTask
     }
+
+    fun deleteTask(taskId: String) {
+        tasks = tasks.filter { it.id != taskId }
+    }
+
+    fun updateTask(taskId: String, title: String, description: String, category: String, priority: Priority, dueDate: String) {
+        if (title.isBlank()) {
+            errorMessage = "Título requerido"
+            return
+        }
+        errorMessage = null
+        tasks = tasks.map { task ->
+            if (task.id == taskId) {
+                task.copy(
+                    title = title,
+                    description = description,
+                    category = category.ifBlank { "General" },
+                    priority = priority,
+                    dueDate = dueDate.ifBlank { task.dueDate }
+                )
+            } else {
+                task
+            }
+        }
+    }
 }
