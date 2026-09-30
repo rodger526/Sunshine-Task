@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.sunshine_task.ui.components.EmptyState
 import com.example.sunshine_task.ui.components.FilterSection
 import com.example.sunshine_task.ui.components.SearchBar
 import com.example.sunshine_task.ui.components.StatsSection
@@ -79,11 +80,7 @@ fun HomeScreen(
                         .weight(1f),
                     contentAlignment = androidx.compose.ui.Alignment.Center
                 ) {
-                    Text(
-                        text = "No se encontraron tareas",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.outline
-                    )
+                    EmptyState()
                 }
             } else {
                 LazyColumn(
