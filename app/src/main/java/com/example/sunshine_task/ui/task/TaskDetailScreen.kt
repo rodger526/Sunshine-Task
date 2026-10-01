@@ -1,5 +1,6 @@
 package com.example.sunshine_task.ui.task
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -7,10 +8,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.example.sunshine_task.data.models.Priority
+import com.example.sunshine_task.data.models.Status
 import com.example.sunshine_task.data.models.Task
-import com.example.sunshine_task.ui.components.CategoryBadge
 import com.example.sunshine_task.ui.components.PriorityBadge
 import com.example.sunshine_task.ui.components.StatusBadge
 
@@ -24,29 +26,21 @@ fun TaskDetailScreen(
     onDeleteTask: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isEditing by remember { mutableStateOf(false) }
-    var title by remember { mutableStateOf(task.title) }
-    var description by remember { mutableStateOf(task.description) }
-    var category by remember { mutableStateOf(task.category) }
-    var priority by remember { mutableStateOf(task.priority) }
-    var dueDate by remember { mutableStateOf(task.dueDate) }
-
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text(if (isEditing) "Editar Tarea" else "Detalle de Tarea") },
+                title = { },
                 navigationIcon = {
                     TextButton(onClick = onBack) {
-                        Text("Atrás")
+                        Text("< Volver", color = MaterialTheme.colorScheme.primary)
                     }
                 },
                 actions = {
-                    if (!isEditing) {
-                        TextButton(onClick = { isEditing = true }) {
-                            Text("Editar")
-                        }
+                    TextButton(onClick = onDeleteTask) {
+                        Text("Eliminar", color = MaterialTheme.colorScheme.error)
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
         modifier = modifier
@@ -57,151 +51,144 @@ fun TaskDetailScreen(
                 .padding(innerPadding)
                 .padding(16.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            if (isEditing) {
-                OutlinedTextField(
-                    value = title,
-                    onValueChange = { title = it },
-                    label = { Text("Título *") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                OutlinedTextField(
-                    value = description,
-                    onValueChange = { description = it },
-                    label = { Text("Descripción") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                OutlinedTextField(
-                    value = category,
-                    onValueChange = { category = it },
-                    label = { Text("Categoría") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Text("Prioridad", style = MaterialTheme.typography.titleSmall)
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Task Detail Card
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                shape = MaterialTheme.shapes.large
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Priority.entries.forEach { p ->
-                        FilterChip(
-                            selected = priority == p,
-                            onClick = { priority = p },
-                            label = { Text(p.name) }
-                        )
-                    }
-                }
-
-                OutlinedTextField(
-                    value = dueDate,
-                    onValueChange = { dueDate = it },
-                    label = { Text("Fecha límite (YYYY-MM-DD)") },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true
-                )
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Button(
-                        onClick = {
-                            onUpdateTask(title, description, category, priority, dueDate)
-                            isEditing = false
-                        },
-                        modifier = Modifier.weight(1f)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Guardar")
+                        PriorityBadge(priority = task.priority)
+                        StatusBadge(status = task.status)
                     }
-                    OutlinedButton(
-                        onClick = {
-                            title = task.title
-                            description = task.description
-                            category = task.category
-                            priority = task.priority
-                            dueDate = task.dueDate
-                            isEditing = false
-                        },
-                        modifier = Modifier.weight(1f)
-                    ) {
-                        Text("Cancelar")
-                    }
-                }
-            } else {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            CategoryBadge(category = task.category)
-                            PriorityBadge(priority = task.priority)
-                        }
 
+                    Text(
+                        text = task.title,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    if (task.description.isNotBlank()) {
                         Text(
-                            text = task.title,
-                            style = MaterialTheme.typography.headlineSmall
-                        )
-
-                        Text(
-                            text = task.description.ifBlank { "Sin descripción" },
+                            text = task.description,
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
 
-                        HorizontalDivider()
+                    Spacer(modifier = Modifier.height(4.dp))
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Estado:", style = MaterialTheme.typography.bodyMedium)
-                            StatusBadge(status = task.status)
-                        }
+                    Text(
+                        text = "Categoría: ${task.category}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text("Fecha límite:", style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                text = task.dueDate,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
+                    Text(
+                        text = "Fecha límite: ${task.dueDate}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Estado Section
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "Estado",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                val statuses = listOf(
+                    Status.PENDIENTE to "Pendiente",
+                    Status.EN_PROGRESO to "En progreso",
+                    Status.COMPLETADA to "Completada"
+                )
+
+                statuses.forEach { (statusEnum, statusLabel) ->
+                    val isSelected = task.status == statusEnum
+                    OutlinedButton(
+                        onClick = {
+                            if (!isSelected) {
+                                onToggleStatus()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaterialTheme.shapes.medium,
+                        border = BorderStroke(
+                            width = 1.dp,
+                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                        ),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.08f) else Color.Transparent,
+                            contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                        )
+                    ) {
+                        Text(statusLabel)
                     }
                 }
+            }
+
+            // Evidencias Section
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Text(
+                    text = "Evidencias",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = "Adjunta fotos, PDFs, documentos u otros archivos para demostrar que realizaste la tarea.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
                 Button(
-                    onClick = onToggleStatus,
-                    modifier = Modifier.fillMaxWidth()
+                    onClick = { /* Handle attach evidence */ },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaterialTheme.shapes.medium,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
                 ) {
-                    Text("Cambiar Estado")
+                    Text("+ Adjuntar evidencia")
                 }
 
-                OutlinedButton(
-                    onClick = onDeleteTask,
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                    modifier = Modifier.fillMaxWidth()
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)),
+                    shape = MaterialTheme.shapes.medium
                 ) {
-                    Text("Eliminar Tarea")
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Todavía no has adjuntado evidencias.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
                 }
             }
         }

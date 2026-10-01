@@ -62,8 +62,9 @@ class TaskViewModel : ViewModel() {
 
     val totalTasks: Int get() = tasks.size
     val completedTasks: Int get() = tasks.count { it.status == Status.COMPLETADA }
-    val pendingTasks: Int get() = tasks.count { it.status == Status.PENDIENTE }
+    val pendingTasks: Int get() = tasks.count { it.status == Status.PENDIENTE || it.status == Status.EN_PROGRESO }
     val inProgressTasks: Int get() = tasks.count { it.status == Status.EN_PROGRESO }
+    val overdueTasks: Int get() = tasks.count { it.status != Status.COMPLETADA && it.dueDate < "2026-10-01" }
 
     val filteredTasks: List<Task>
         get() {
@@ -71,8 +72,7 @@ class TaskViewModel : ViewModel() {
                 val matchesSearch = task.title.contains(searchQuery, ignoreCase = true) ||
                         task.description.contains(searchQuery, ignoreCase = true)
                 val matchesFilter = when (selectedFilter) {
-                    "PENDIENTE" -> task.status == Status.PENDIENTE
-                    "EN_PROGRESO" -> task.status == Status.EN_PROGRESO
+                    "PENDIENTE" -> task.status == Status.PENDIENTE || task.status == Status.EN_PROGRESO
                     "COMPLETADA" -> task.status == Status.COMPLETADA
                     else -> true
                 }

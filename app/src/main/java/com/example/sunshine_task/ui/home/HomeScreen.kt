@@ -5,6 +5,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.sunshine_task.ui.components.EmptyState
@@ -50,15 +51,17 @@ fun HomeScreen(
         },
         modifier = modifier
     ) { innerPadding ->
-        Column(
+        val tasks = viewModel.filteredTasks
+
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 16.dp, vertical = 12.dp),
+                .padding(innerPadding),
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Subtitle / header description
-            Column(modifier = Modifier.fillMaxWidth()) {
+            item {
                 Text(
                     text = "Programa tus objetivos, alcanza tu calidad de vida.",
                     style = MaterialTheme.typography.bodyLarge,
@@ -67,59 +70,65 @@ fun HomeScreen(
             }
 
             // Statistics section
-            StatsSection(
-                total = viewModel.totalTasks,
-                completed = viewModel.completedTasks,
-                pending = viewModel.pendingTasks,
-                inProgress = viewModel.inProgressTasks
-            )
+            item {
+                StatsSection(
+                    total = viewModel.totalTasks,
+                    completed = viewModel.completedTasks,
+                    pending = viewModel.pendingTasks,
+                    overdue = viewModel.overdueTasks
+                )
+            }
 
             // Search bar
-            SearchBar(
-                query = viewModel.searchQuery,
-                onQueryChange = { viewModel.updateSearchQuery(it) }
-            )
+            item {
+                SearchBar(
+                    query = viewModel.searchQuery,
+                    onQueryChange = { viewModel.updateSearchQuery(it) }
+                )
+            }
 
             // Filters
-            FilterSection(
-                selectedFilter = viewModel.selectedFilter,
-                onFilterSelected = { viewModel.updateFilter(it) }
-            )
+            item {
+                FilterSection(
+                    selectedFilter = viewModel.selectedFilter,
+                    onFilterSelected = { viewModel.updateFilter(it) }
+                )
+            }
 
             // Section Header: Mis tareas
-            Text(
-                text = "Mis tareas",
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                modifier = Modifier.padding(top = 8.dp)
-            )
+            item {
+                Text(
+                    text = "Mis tareas",
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(top = 8.dp)
+                )
+            }
 
-            // Task list
-            val tasks = viewModel.filteredTasks
+            // Task list or Empty state
             if (tasks.isEmpty()) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    contentAlignment = androidx.compose.ui.Alignment.Center
-                ) {
-                    EmptyState()
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 80.dp)
-                ) {
-                    items(tasks, key = { it.id }) { task ->
-                        TaskCard(
-                            task = task,
-                            onTaskClick = { onTaskClick(task.id) }
-                        )
+                item {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        EmptyState()
                     }
                 }
+            } else {
+                items(tasks, key = { it.id }) { task ->
+                    TaskCard(
+                        task = task,
+                        onTaskClick = { onTaskClick(task.id) }
+                    )
+                }
+            }
+
+            // Bottom spacing for FAB
+            item {
+                Spacer(modifier = Modifier.height(80.dp))
             }
         }
     }

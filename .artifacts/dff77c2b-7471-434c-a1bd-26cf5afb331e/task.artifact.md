@@ -1,0 +1,5 @@
+- `[ ]` Update Dashboard StatsSection (4 cards: Total, Pendientes, Completadas, Vencidas in 2x2 grid)
+- `[ ]` Update FilterSection chips ("Todas", "Pendientes", "Hechas")
+- `[ ]` Redesign CreateTaskScreen (modal card style, priority buttons, interactive DatePicker)
+- `[ ]` Redesign TaskDetailScreen (Volver/Eliminar header, status change buttons, Evidencias section)
+- `[ ]` Verify build and functionality

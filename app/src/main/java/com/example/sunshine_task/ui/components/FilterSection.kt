@@ -4,6 +4,7 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -18,22 +19,31 @@ fun FilterSection(
     val filters = listOf(
         "TODAS" to "Todas",
         "PENDIENTE" to "Pendientes",
-        "EN_PROGRESO" to "En Proceso",
-        "COMPLETADA" to "Completadas"
+        "COMPLETADA" to "Hechas"
     )
 
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState()),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        filters.forEach { (key, label) ->
-            FilterChip(
-                selected = selectedFilter == key,
-                onClick = { onFilterSelected(key) },
-                label = { Text(label) }
-            )
+        Text(
+            text = "Estado",
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            filters.forEach { (key, label) ->
+                FilterChip(
+                    selected = selectedFilter == key,
+                    onClick = { onFilterSelected(key) },
+                    label = { Text(label) }
+                )
+            }
         }
     }
 }
