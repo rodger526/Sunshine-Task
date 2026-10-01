@@ -15,6 +15,12 @@ class TaskViewModel : ViewModel() {
     var selectedFilter by mutableStateOf("TODAS")
         private set
 
+    var selectedDateFilter by mutableStateOf("")
+        private set
+
+    var selectedPriorityFilter by mutableStateOf("ALL")
+        private set
+
     var errorMessage by mutableStateOf<String?>(null)
         private set
 
@@ -71,12 +77,31 @@ class TaskViewModel : ViewModel() {
             return tasks.filter { task ->
                 val matchesSearch = task.title.contains(searchQuery, ignoreCase = true) ||
                         task.description.contains(searchQuery, ignoreCase = true)
+                
+                val isOverdue = task.status != Status.COMPLETADA && task.dueDate < "2026-10-01"
+
                 val matchesFilter = when (selectedFilter) {
                     "PENDIENTE" -> task.status == Status.PENDIENTE || task.status == Status.EN_PROGRESO
                     "COMPLETADA" -> task.status == Status.COMPLETADA
+                    "VENCIDA" -> isOverdue
                     else -> true
                 }
-                matchesSearch && matchesFilter
+
+                val matchesDate = if (selectedDateFilter.isBlank()) {
+                    true
+                } else {
+                    task.dueDate == selectedDateFilter
+                }
+
+                val matchesPriority = when (selectedPriorityFilter) {
+                    "BAJA" -> task.priority == Priority.BAJA
+                    "MEDIA" -> task.priority == Priority.MEDIA
+                    "ALTA" -> task.priority == Priority.ALTA
+                    "URGENTE" -> task.priority == Priority.URGENTE
+                    else -> true
+                }
+
+                matchesSearch && matchesFilter && matchesDate && matchesPriority
             }
         }
 
@@ -86,6 +111,14 @@ class TaskViewModel : ViewModel() {
 
     fun updateFilter(filter: String) {
         selectedFilter = filter
+    }
+
+    fun updateDateFilter(date: String) {
+        selectedDateFilter = date
+    }
+
+    fun updatePriorityFilter(priority: String) {
+        selectedPriorityFilter = priority
     }
 
     fun toggleTaskStatus(taskId: String) {

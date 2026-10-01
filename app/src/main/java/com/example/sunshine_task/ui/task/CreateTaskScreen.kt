@@ -41,7 +41,9 @@ fun CreateTaskScreen(
                     onClick = {
                         showDatePicker = false
                         datePickerState.selectedDateMillis?.let { millis ->
-                            val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                            val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                                timeZone = TimeZone.getTimeZone("UTC")
+                            }
                             dueDate = formatter.format(Date(millis))
                         }
                     }
@@ -143,7 +145,7 @@ fun CreateTaskScreen(
                         }
                     }
 
-                    OutlinedButton(
+OutlinedButton(
                         onClick = { showDatePicker = true },
                         modifier = Modifier.fillMaxWidth(),
                         shape = MaterialTheme.shapes.medium

@@ -91,7 +91,11 @@ fun HomeScreen(
             item {
                 FilterSection(
                     selectedFilter = viewModel.selectedFilter,
-                    onFilterSelected = { viewModel.updateFilter(it) }
+                    onFilterSelected = { viewModel.updateFilter(it) },
+                    selectedDateFilter = viewModel.selectedDateFilter,
+                    onDateFilterSelected = { viewModel.updateDateFilter(it) },
+                    selectedPriorityFilter = viewModel.selectedPriorityFilter,
+                    onPriorityFilterSelected = { viewModel.updatePriorityFilter(it) }
                 )
             }
 
