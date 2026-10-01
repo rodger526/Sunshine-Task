@@ -3,7 +3,6 @@ package com.example.sunshine_task.ui.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
@@ -34,28 +33,11 @@ fun StatsSection(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                StatItem(label = "Total", count = total)
-                StatItem(label = "Pendientes", count = pending)
-                StatItem(label = "En Proceso", count = inProgress)
-                StatItem(label = "Completadas", count = completed)
+                StatCard(label = "Total", count = total)
+                StatCard(label = "Pendientes", count = pending)
+                StatCard(label = "En Proceso", count = inProgress)
+                StatCard(label = "Completadas", count = completed)
             }
         }
-    }
-}
-
-@Composable
-fun StatItem(label: String, count: Int) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Text(
-            text = count.toString(),
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.primary
-        )
-        Spacer(modifier = Modifier.height(2.dp))
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
