@@ -15,6 +15,7 @@ import com.example.sunshine_task.ui.theme.viewmodel.TaskViewModel
 fun CreateTaskScreen(
     viewModel: TaskViewModel,
     onTaskCreated: () -> Unit,
+    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     var title by remember { mutableStateOf("") }
@@ -26,7 +27,12 @@ fun CreateTaskScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Crear Nueva Tarea") }
+                title = { Text("Crear Nueva Tarea") },
+                navigationIcon = {
+                    TextButton(onClick = onBack) {
+                        Text("Atrás")
+                    }
+                }
             )
         },
         modifier = modifier
@@ -67,7 +73,7 @@ fun CreateTaskScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Priority.values().forEach { p ->
+                Priority.entries.forEach { p ->
                     FilterChip(
                         selected = priority == p,
                         onClick = { priority = p },
@@ -96,7 +102,6 @@ fun CreateTaskScreen(
 
             Button(
                 onClick = {
-                    // Intentionally attempts to create task without local UI validation; validation enforced in ViewModel
                     viewModel.addTask(title, description, category, priority, dueDate)
                     if (viewModel.errorMessage == null) {
                         onTaskCreated()

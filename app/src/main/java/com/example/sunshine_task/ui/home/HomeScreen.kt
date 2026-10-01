@@ -18,13 +18,35 @@ import com.example.sunshine_task.ui.theme.viewmodel.TaskViewModel
 @Composable
 fun HomeScreen(
     viewModel: TaskViewModel,
+    onTaskClick: (String) -> Unit,
+    onCreateTaskClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Sunshine Task") }
+                title = { 
+                    Text(
+                        "Sunshine Task",
+                        style = MaterialTheme.typography.titleLarge
+                    ) 
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                )
             )
+        },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = onCreateTaskClick,
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary
+            ) {
+                Text(
+                    text = "+",
+                    style = MaterialTheme.typography.headlineMedium
+                )
+            }
         },
         modifier = modifier
     ) { innerPadding ->
@@ -32,7 +54,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 16.dp),
+                .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Subtitle / header description
@@ -68,6 +90,7 @@ fun HomeScreen(
             Text(
                 text = "Mis tareas",
                 style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 8.dp)
             )
 
@@ -87,12 +110,13 @@ fun HomeScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 80.dp)
                 ) {
                     items(tasks, key = { it.id }) { task ->
                         TaskCard(
                             task = task,
-                            onTaskClick = { viewModel.toggleTaskStatus(task.id) }
+                            onTaskClick = { onTaskClick(task.id) }
                         )
                     }
                 }
