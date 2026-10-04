@@ -63,7 +63,7 @@ fun HomeScreen(
             // Subtitle / header description
             item {
                 Text(
-                    text = "Programa tus objetivos, alcanza tu calidad de vida.",
+                    text = "Tus objetivos",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -91,7 +91,11 @@ fun HomeScreen(
             item {
                 FilterSection(
                     selectedFilter = viewModel.selectedFilter,
-                    onFilterSelected = { viewModel.updateFilter(it) }
+                    onFilterSelected = { viewModel.updateFilter(it) },
+                    selectedDateFilter = viewModel.selectedDateFilter,
+                    onDateFilterSelected = { viewModel.updateDateFilter(it) },
+                    selectedPriorityFilter = viewModel.selectedPriorityFilter,
+                    onPriorityFilterSelected = { viewModel.updatePriorityFilter(it) }
                 )
             }
 
