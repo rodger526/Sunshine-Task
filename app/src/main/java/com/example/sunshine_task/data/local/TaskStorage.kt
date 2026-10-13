@@ -2,10 +2,10 @@
 
 import android.content.Context
 import org.json.JSONArray
-import org.json.JSONObject
 import com.example.sunshine_task.model.Task
 import com.example.sunshine_task.model.TaskPriority
 import com.example.sunshine_task.model.TaskStatus
+import java.util.UUID
 
 class TaskStorage(context: Context) {
     private val prefs = context.getSharedPreferences("sunshine_task_prefs", Context.MODE_PRIVATE)
@@ -13,7 +13,7 @@ class TaskStorage(context: Context) {
     fun saveTasks(tasks: List<Task>) {
         val array = JSONArray()
         tasks.forEach { task ->
-            val obj = JSONObject().apply {
+            val obj = org.json.JSONObject().apply {
                 put("id", task.id)
                 put("title", task.title)
                 put("description", task.description)
@@ -28,26 +28,39 @@ class TaskStorage(context: Context) {
         prefs.edit().putString("saved_tasks", array.toString()).apply()
     }
 
-    // ERROR INTENCIONAL 2: getString() directo sin optString ni proteccion.
-    // Si el usuario tiene tareas viejas sin algun campo nuevo, la app falla al abrir.
+    // CORRECCION: Lectura robusta para no cerrar la app ante datos corruptos o antiguos
     fun loadTasks(): List<Task> {
         val jsonString = prefs.getString("saved_tasks", null) ?: return emptyList()
-        val array = JSONArray(jsonString)
         val list = mutableListOf<Task>()
-        for (i in 0 until array.length()) {
-            val obj = array.getJSONObject(i)
-            list.add(
-                Task(
-                    id = obj.getString("id"),
-                    title = obj.getString("title"),
-                    description = obj.getString("description"),
-                    category = obj.getString("category"),
-                    priority = TaskPriority.valueOf(obj.getString("priority")),
-                    status = TaskStatus.valueOf(obj.getString("status")),
-                    dueDate = obj.getString("dueDate").ifEmpty { null },
-                    createdAt = obj.getLong("createdAt")
-                )
-            )
+        try {
+            val array = JSONArray(jsonString)
+            for (i in 0 until array.length()) {
+                try {
+                    val obj = array.getJSONObject(i)
+                    val title = obj.optString("title", "").trim()
+                    if (title.isEmpty()) continue
+
+                    val priorityStr = obj.optString("priority", "MEDIA")
+                    val statusStr = obj.optString("status", "PENDIENTE")
+
+                    list.add(
+                        Task(
+                            id = obj.optString("id", UUID.randomUUID().toString()),
+                            title = title,
+                            description = obj.optString("description", ""),
+                            category = obj.optString("category", "General"),
+                            priority = try { TaskPriority.valueOf(priorityStr) } catch (_: Exception) { TaskPriority.MEDIA },
+                            status = try { TaskStatus.valueOf(statusStr) } catch (_: Exception) { TaskStatus.PENDIENTE },
+                            dueDate = obj.optString("dueDate", "").ifEmpty { null },
+                            createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+                        )
+                    )
+                } catch (_: Exception) {
+                    // Ignora el registro corrupto puntual sin tronar el resto
+                }
+            }
+        } catch (_: Exception) {
+            return emptyList()
         }
         return list
     }
