@@ -35,9 +35,13 @@ class TaskViewModel(
         priority: Priority = Priority.MEDIUM,
         dueDate: LocalDateTime? = null
     ) {
+        val cleanTitle = title.trim()
+
+        if (cleanTitle.isEmpty()) return
+
         val task = Task(
             id = UUID.randomUUID().toString(),
-            title = title,
+            title = cleanTitle,
             description = description,
             category = category,
             priority = priority,
