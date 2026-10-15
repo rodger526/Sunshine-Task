@@ -55,9 +55,23 @@ class TaskViewModel(
     }
 
     fun updateTask(task: Task) {
-        repository.updateTask(task)
+        val cleanTitle = task.title.trim()
+
+        if (cleanTitle.isEmpty()) return
+
+        val existingTask = _tasks.value.find { it.id == task.id } ?: return
+        val updatedTask = existingTask.copy(
+            title = cleanTitle,
+            description = task.description,
+            category = task.category,
+            priority = task.priority,
+            dueDate = task.dueDate,
+            status = task.status
+        )
+
+        repository.updateTask(updatedTask)
         refreshTasks()
-        refreshSelectedTask(task.id)
+        refreshSelectedTask(updatedTask.id)
     }
 
     fun deleteTask(taskId: String) {
