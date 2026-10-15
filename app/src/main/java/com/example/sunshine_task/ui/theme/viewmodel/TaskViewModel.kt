@@ -72,6 +72,9 @@ class TaskViewModel(
     fun changeTaskStatus(taskId: String, newStatus: TaskStatus) {
         val task = _tasks.value.find { it.id == taskId } ?: return
 
+        if (task.status == TaskStatus.COMPLETED) return
+        if (task.status == newStatus) return
+
         updateTask(task.copy(status = newStatus))
     }
 
