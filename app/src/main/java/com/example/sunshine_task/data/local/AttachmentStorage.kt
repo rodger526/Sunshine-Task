@@ -13,6 +13,9 @@ class AttachmentStorage(context: Context) {
         attachments.forEach { item ->
             val obj = JSONObject().apply {
                 put("uri", item.uri)
+                put("name", item.name)
+                put("mimeType", item.mimeType)
+                put("sizeText", item.sizeText)
             }
             array.put(obj)
         }
@@ -28,7 +31,14 @@ class AttachmentStorage(context: Context) {
                 val obj = array.getJSONObject(i)
                 val uri = obj.optString("uri", "")
                 if (uri.isNotEmpty()) {
-                    list.add(TaskAttachment(uri = uri))
+                    list.add(
+                        TaskAttachment(
+                            uri = uri,
+                            name = obj.optString("name", "Archivo adjunto"),
+                            mimeType = obj.optString("mimeType", "*/*"),
+                            sizeText = obj.optString("sizeText", "")
+                        )
+                    )
                 }
             }
         } catch (_: Exception) {
