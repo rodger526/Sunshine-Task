@@ -9,8 +9,11 @@ class AttachmentStorage(context: Context) {
     private val prefs = context.getSharedPreferences("sunshine_task_attachments", Context.MODE_PRIVATE)
 
     fun saveAttachments(taskId: String, attachments: List<TaskAttachment>) {
+        // CORRECCION: Evitar elementos duplicados comparando su URI
+        val uniqueAttachments = attachments.distinctBy { it.uri }
+
         val array = JSONArray()
-        attachments.forEach { item ->
+        uniqueAttachments.forEach { item ->
             val obj = JSONObject().apply {
                 put("uri", item.uri)
                 put("name", item.name)
@@ -44,6 +47,6 @@ class AttachmentStorage(context: Context) {
         } catch (_: Exception) {
             return emptyList()
         }
-        return list
+        return list.distinctBy { it.uri }
     }
 }
