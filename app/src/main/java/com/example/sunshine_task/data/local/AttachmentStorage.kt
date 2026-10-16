@@ -9,7 +9,6 @@ class AttachmentStorage(context: Context) {
     private val prefs = context.getSharedPreferences("sunshine_task_attachments", Context.MODE_PRIVATE)
 
     fun saveAttachments(taskId: String, attachments: List<TaskAttachment>) {
-        // CORRECCION: Evitar elementos duplicados comparando su URI
         val uniqueAttachments = attachments.distinctBy { it.uri }
 
         val array = JSONArray()
@@ -48,5 +47,15 @@ class AttachmentStorage(context: Context) {
             return emptyList()
         }
         return list.distinctBy { it.uri }
+    }
+
+    fun removeAttachment(taskId: String, uriToRemove: String) {
+        val current = loadAttachments(taskId).toMutableList()
+        current.removeAll { it.uri == uriToRemove }
+        saveAttachments(taskId, current)
+    }
+
+    fun clearAttachments(taskId: String) {
+        prefs.edit().remove("attachments_$taskId").apply()
     }
 }
