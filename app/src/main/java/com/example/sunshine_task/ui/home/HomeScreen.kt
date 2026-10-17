@@ -12,14 +12,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.sunshine_task.ui.components.EmptyState
 import com.example.sunshine_task.ui.components.FilterSection
 import com.example.sunshine_task.ui.components.SearchBar
 import com.example.sunshine_task.ui.components.StatsSection
 import com.example.sunshine_task.ui.components.TaskCard
 import com.example.sunshine_task.ui.task.CreateTaskScreen
-import com.example.sunshine_task.ui.theme.viewmodel.TaskUiState
 import com.example.sunshine_task.ui.theme.viewmodel.TaskViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -30,7 +28,6 @@ fun HomeScreen(
     modifier: Modifier = Modifier
 ) {
     var showCreateTask by remember { mutableStateOf(false) }
-    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Box(modifier = modifier.fillMaxSize()) {
         Scaffold(
@@ -60,112 +57,88 @@ fun HomeScreen(
                 }
             }
         ) { innerPadding ->
-            when (val state = uiState) {
-                is TaskUiState.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            val tasks = viewModel.filteredTasks
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Subtitle / header description
+                item {
+                    Text(
+                        text = "Tus objetivos",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                // Statistics section
+                item {
+                    StatsSection(
+                        total = viewModel.totalTasks,
+                        completed = viewModel.completedTasks,
+                        pending = viewModel.pendingTasks,
+                        overdue = viewModel.overdueTasks
+                    )
+                }
+
+                // Search bar
+                item {
+                    SearchBar(
+                        query = viewModel.searchQuery,
+                        onQueryChange = { viewModel.updateSearchQuery(it) }
+                    )
+                }
+
+                // Filters
+                item {
+                    FilterSection(
+                        selectedFilter = viewModel.selectedFilter,
+                        onFilterSelected = { viewModel.updateFilter(it) },
+                        selectedDateFilter = viewModel.selectedDateFilter,
+                        onDateFilterSelected = { viewModel.updateDateFilter(it) },
+                        selectedPriorityFilter = viewModel.selectedPriorityFilter,
+                        onPriorityFilterSelected = { viewModel.updatePriorityFilter(it) }
+                    )
+                }
+
+                // Section Header: Mis tareas
+                item {
+                    Text(
+                        text = "Mis tareas",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+
+                // Task list or Empty state
+                if (tasks.isEmpty()) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(200.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            EmptyState()
+                        }
+                    }
+                } else {
+                    items(tasks, key = { it.id }) { task ->
+                        TaskCard(
+                            task = task,
+                            onTaskClick = { onTaskClick(task.id) }
+                        )
                     }
                 }
-                is TaskUiState.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(text = state.message, color = MaterialTheme.colorScheme.error)
-                    }
-                }
-                is TaskUiState.Success -> {
-                    val tasks = state.filteredTasks
 
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(innerPadding),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-                        verticalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        // Subtitle / header description
-                        item {
-                            Text(
-                                text = "Tus objetivos",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        // Statistics section
-                        item {
-                            StatsSection(
-                                total = state.totalTasks,
-                                completed = state.completedTasks,
-                                pending = state.pendingTasks,
-                                overdue = state.overdueTasks
-                            )
-                        }
-
-                        // Search bar
-                        item {
-                            SearchBar(
-                                query = state.searchQuery,
-                                onQueryChange = { viewModel.updateSearchQuery(it) }
-                            )
-                        }
-
-                        // Filters
-                        item {
-                            FilterSection(
-                                selectedFilter = state.selectedFilter,
-                                onFilterSelected = { viewModel.updateFilter(it) },
-                                selectedDateFilter = state.selectedDateFilter,
-                                onDateFilterSelected = { viewModel.updateDateFilter(it) },
-                                selectedPriorityFilter = state.selectedPriorityFilter,
-                                onPriorityFilterSelected = { viewModel.updatePriorityFilter(it) }
-                            )
-                        }
-
-                        // Section Header: Mis tareas
-                        item {
-                            Text(
-                                text = "Mis tareas",
-                                style = MaterialTheme.typography.titleLarge,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(top = 8.dp)
-                            )
-                        }
-
-                        // Task list or Empty state
-                        if (tasks.isEmpty()) {
-                            item {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .height(200.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    EmptyState()
-                                }
-                            }
-                        } else {
-                            items(tasks, key = { it.id }) { task ->
-                                TaskCard(
-                                    task = task,
-                                    onTaskClick = { onTaskClick(task.id) }
-                                )
-                            }
-                        }
-
-                        // Bottom spacing for FAB
-                        item {
-                            Spacer(modifier = Modifier.height(80.dp))
-                        }
-                    }
+                // Bottom spacing for FAB
+                item {
+                    Spacer(modifier = Modifier.height(80.dp))
                 }
             }
         }

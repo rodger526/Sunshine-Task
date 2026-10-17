@@ -2,9 +2,9 @@
 
 import android.content.Context
 import org.json.JSONArray
-import com.example.sunshine_task.model.Task
-import com.example.sunshine_task.model.TaskPriority
-import com.example.sunshine_task.model.TaskStatus
+import com.example.sunshine_task.data.models.Task
+import com.example.sunshine_task.data.models.Priority
+import com.example.sunshine_task.data.models.Status
 import java.util.UUID
 
 class TaskStorage(context: Context) {
@@ -20,15 +20,13 @@ class TaskStorage(context: Context) {
                 put("category", task.category)
                 put("priority", task.priority.name)
                 put("status", task.status.name)
-                put("dueDate", task.dueDate ?: "")
-                put("createdAt", task.createdAt)
+                put("dueDate", task.dueDate)
             }
             array.put(obj)
         }
         prefs.edit().putString("saved_tasks", array.toString()).apply()
     }
 
-    // CORRECCION: Lectura robusta para no cerrar la app ante datos corruptos o antiguos
     fun loadTasks(): List<Task> {
         val jsonString = prefs.getString("saved_tasks", null) ?: return emptyList()
         val list = mutableListOf<Task>()
@@ -49,10 +47,9 @@ class TaskStorage(context: Context) {
                             title = title,
                             description = obj.optString("description", ""),
                             category = obj.optString("category", "General"),
-                            priority = try { TaskPriority.valueOf(priorityStr) } catch (_: Exception) { TaskPriority.MEDIA },
-                            status = try { TaskStatus.valueOf(statusStr) } catch (_: Exception) { TaskStatus.PENDIENTE },
-                            dueDate = obj.optString("dueDate", "").ifEmpty { null },
-                            createdAt = obj.optLong("createdAt", System.currentTimeMillis())
+                            priority = try { Priority.valueOf(priorityStr) } catch (_: Exception) { Priority.MEDIA },
+                            status = try { Status.valueOf(statusStr) } catch (_: Exception) { Status.PENDIENTE },
+                            dueDate = obj.optString("dueDate", "2026-12-31")
                         )
                     )
                 } catch (_: Exception) {

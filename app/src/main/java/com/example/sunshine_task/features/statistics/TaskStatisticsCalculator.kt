@@ -1,7 +1,7 @@
 ﻿package com.example.sunshine_task.features.statistics
 
-import com.example.sunshine_task.model.Task
-import com.example.sunshine_task.model.TaskStatus
+import com.example.sunshine_task.data.models.Task
+import com.example.sunshine_task.data.models.Status
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -15,7 +15,7 @@ data class TaskStats(
 )
 
 object TaskStatisticsCalculator {
-    private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+    private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
 
     fun calculate(tasks: List<Task>): TaskStats {
         val today = Date()
@@ -27,12 +27,12 @@ object TaskStatisticsCalculator {
 
         tasks.forEach { task ->
             when (task.status) {
-                TaskStatus.PENDIENTE -> pendientes++
-                TaskStatus.EN_PROGRESO -> enProgreso++
-                TaskStatus.COMPLETADA -> completadas++
+                Status.PENDIENTE -> pendientes++
+                Status.EN_PROGRESO -> enProgreso++
+                Status.COMPLETADA -> completadas++
             }
 
-            if (task.status != TaskStatus.COMPLETADA && !task.dueDate.isNullOrBlank()) {
+            if (task.status != Status.COMPLETADA && task.dueDate.isNotBlank()) {
                 try {
                     val parsed = dateFormat.parse(task.dueDate)
                     if (parsed != null && parsed.before(today)) {
