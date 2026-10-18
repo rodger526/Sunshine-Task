@@ -18,6 +18,10 @@ interface TaskDao {
     @Query("SELECT * FROM tasks WHERE id = :taskId")
     fun observeById(taskId: String): Flow<TaskEntity?>
 
+    // Lectura única, para reprogramar recordatorios al abrir la app.
+    @Query("SELECT * FROM tasks")
+    suspend fun getAll(): List<TaskEntity>
+
     // Escrituras: funciones suspend, Room las ejecuta fuera del hilo principal.
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(task: TaskEntity)
