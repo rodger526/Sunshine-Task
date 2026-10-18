@@ -1,10 +1,9 @@
-﻿package com.example.sunshine_task.features.statistics
+package com.example.sunshine_task.features.statistics
 
-import com.example.sunshine_task.model.Task
-import com.example.sunshine_task.model.TaskStatus
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.example.sunshine_task.data.models.Status
+import com.example.sunshine_task.data.models.Task
+import com.example.sunshine_task.features.filters.isOverdue
+import java.time.LocalDate
 
 data class TaskStats(
     val total: Int,
@@ -15,41 +14,17 @@ data class TaskStats(
 )
 
 object TaskStatisticsCalculator {
-    private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
+    /** Las estadísticas se calculan siempre a partir de las tareas; no se almacenan. */
     fun calculate(tasks: List<Task>): TaskStats {
-        val today = Date()
-
-        var pendientes = 0
-        var enProgreso = 0
-        var completadas = 0
-        var vencidas = 0
-
-        tasks.forEach { task ->
-            when (task.status) {
-                TaskStatus.PENDIENTE -> pendientes++
-                TaskStatus.EN_PROGRESO -> enProgreso++
-                TaskStatus.COMPLETADA -> completadas++
-            }
-
-            if (task.status != TaskStatus.COMPLETADA && !task.dueDate.isNullOrBlank()) {
-                try {
-                    val parsed = dateFormat.parse(task.dueDate)
-                    if (parsed != null && parsed.before(today)) {
-                        vencidas++
-                    }
-                } catch (_: Exception) {
-                    // Ignora fechas no legibles
-                }
-            }
-        }
+        val today = LocalDate.now()
 
         return TaskStats(
             total = tasks.size,
-            pendientes = pendientes,
-            enProgreso = enProgreso,
-            completadas = completadas,
-            vencidas = vencidas
+            pendientes = tasks.count { it.status == Status.PENDIENTE },
+            enProgreso = tasks.count { it.status == Status.EN_PROGRESO },
+            completadas = tasks.count { it.status == Status.COMPLETADA },
+            vencidas = tasks.count { it.isOverdue(today) }
         )
     }
 }

@@ -1,4 +1,4 @@
-﻿package com.example.sunshine_task.di
+package com.example.sunshine_task.di
 
 import com.example.sunshine_task.data.repository.TaskRepository
 import com.example.sunshine_task.data.repository.TaskRepositoryImpl
@@ -6,15 +6,11 @@ import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
-import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
 
     @Binds
-    @Singleton
-    abstract fun bindTaskRepository(
-        impl: TaskRepositoryImpl
-    ): TaskRepository
+    abstract fun bindTaskRepository(impl: TaskRepositoryImpl): TaskRepository
 }

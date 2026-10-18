@@ -1,38 +1,61 @@
-﻿package com.example.sunshine_task.ui.navigation
+package com.example.sunshine_task.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.dialog
+import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.sunshine_task.ui.home.HomeRoute
+import com.example.sunshine_task.ui.splash.SplashScreen
 import com.example.sunshine_task.ui.task.CreateTaskRoute
 import com.example.sunshine_task.ui.task.TaskDetailRoute
 
+/** Grafo de navegación centralizado. Cada destino con estado obtiene su propio ViewModel vía Hilt. */
 @Composable
-fun AppNavGraph(navController: NavHostController) {
+fun AppNavGraph(
+    navController: NavHostController = rememberNavController()
+) {
     NavHost(
         navController = navController,
-        startDestination = Screen.Home.route
+        startDestination = Routes.SPLASH
     ) {
-        composable(Screen.Home.route) {
+        composable(Routes.SPLASH) {
+            SplashScreen(
+                onStartClick = {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.SPLASH) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Routes.HOME) {
             HomeRoute(
-                onNavigateToCreate = { navController.navigate(Screen.CreateTask.route) },
-                onNavigateToDetail = { taskId -> navController.navigate(Screen.TaskDetail.createRoute(taskId)) }
+                onTaskClick = { taskId -> navController.navigate(Routes.taskDetail(taskId)) },
+                onCreateTaskClick = { navController.navigate(Routes.CREATE_TASK) }
             )
         }
-        composable(Screen.CreateTask.route) {
+
+        dialog(
+            route = Routes.CREATE_TASK,
+            dialogProperties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
             CreateTaskRoute(
-                onNavigateBack = { navController.popBackStack() }
+                onTaskCreated = { navController.popBackStack() },
+                onBack = { navController.popBackStack() }
             )
         }
+
         composable(
-            route = Screen.TaskDetail.route,
-            arguments = listOf(navArgument("taskId") { type = NavType.StringType })
+            route = Routes.TASK_DETAIL,
+            arguments = listOf(navArgument(Routes.TASK_ID_ARG) { type = NavType.StringType })
         ) {
             TaskDetailRoute(
-                onNavigateBack = { navController.popBackStack() }
+                onBack = { navController.popBackStack() }
             )
         }
     }

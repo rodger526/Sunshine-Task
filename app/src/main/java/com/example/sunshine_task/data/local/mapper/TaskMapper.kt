@@ -1,32 +1,27 @@
-﻿package com.example.sunshine_task.data.local.mapper
+package com.example.sunshine_task.data.local.mapper
 
 import com.example.sunshine_task.data.local.entity.TaskEntity
-import com.example.sunshine_task.data.models.Priority
-import com.example.sunshine_task.data.models.Status
 import com.example.sunshine_task.data.models.Task
+import java.time.LocalDateTime
 
-fun TaskEntity.toDomain(): Task {
-    return Task(
-        id = id,
-        title = title,
-        description = description,
-        category = category,
-        priority = try { Priority.valueOf(priority) } catch (_: Exception) { Priority.MEDIA },
-        status = try { Status.valueOf(status) } catch (_: Exception) { Status.PENDIENTE },
-        dueDate = dueDate,
-        createdAt = createdAt
-    )
-}
+fun TaskEntity.toDomain(): Task = Task(
+    id = id,
+    title = title,
+    description = description,
+    category = category,
+    priority = priority,
+    status = status,
+    dueDate = dueDate,
+    createdAt = runCatching { LocalDateTime.parse(createdAt) }.getOrDefault(LocalDateTime.now())
+)
 
-fun Task.toEntity(): TaskEntity {
-    return TaskEntity(
-        id = id,
-        title = title,
-        description = description,
-        category = category,
-        priority = priority.name,
-        status = status.name,
-        dueDate = dueDate,
-        createdAt = createdAt
-    )
-}
+fun Task.toEntity(): TaskEntity = TaskEntity(
+    id = id,
+    title = title,
+    description = description,
+    category = category,
+    priority = priority,
+    status = status,
+    dueDate = dueDate,
+    createdAt = createdAt.toString()
+)

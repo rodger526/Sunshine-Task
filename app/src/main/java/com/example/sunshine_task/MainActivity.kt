@@ -1,12 +1,11 @@
-﻿package com.example.sunshine_task
+package com.example.sunshine_task
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.navigation.compose.rememberNavController
 import com.example.sunshine_task.ui.navigation.AppNavGraph
-import com.example.sunshine_task.ui.theme.SunshineTaskTheme
+import com.example.sunshine_task.ui.theme.SunshinetaskTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -15,9 +14,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            SunshineTaskTheme {
-                val navController = rememberNavController()
-                AppNavGraph(navController = navController)
+            SunshinetaskTheme {
+                AppNavGraph()
             }
         }
     }
