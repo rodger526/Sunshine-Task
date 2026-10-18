@@ -2,6 +2,7 @@
 
 import android.content.Context
 import org.json.JSONArray
+import org.json.JSONObject
 import com.example.sunshine_task.model.Task
 import com.example.sunshine_task.model.TaskPriority
 import com.example.sunshine_task.model.TaskStatus
@@ -11,13 +12,18 @@ class TaskStorage(context: Context) {
     private val prefs = context.getSharedPreferences("sunshine_task_prefs", Context.MODE_PRIVATE)
 
     fun saveTasks(tasks: List<Task>) {
+        // Depuracion de duplicados y tareas sin titulo
+        val cleanTasks = tasks
+            .filter { it.title.isNotBlank() }
+            .distinctBy { it.id }
+
         val array = JSONArray()
-        tasks.forEach { task ->
-            val obj = org.json.JSONObject().apply {
+        cleanTasks.forEach { task ->
+            val obj = JSONObject().apply {
                 put("id", task.id)
-                put("title", task.title)
-                put("description", task.description)
-                put("category", task.category)
+                put("title", task.title.trim())
+                put("description", task.description.trim())
+                put("category", task.category.ifBlank { "General" })
                 put("priority", task.priority.name)
                 put("status", task.status.name)
                 put("dueDate", task.dueDate ?: "")
@@ -28,7 +34,6 @@ class TaskStorage(context: Context) {
         prefs.edit().putString("saved_tasks", array.toString()).apply()
     }
 
-    // CORRECCION: Lectura robusta para no cerrar la app ante datos corruptos o antiguos
     fun loadTasks(): List<Task> {
         val jsonString = prefs.getString("saved_tasks", null) ?: return emptyList()
         val list = mutableListOf<Task>()
@@ -56,12 +61,22 @@ class TaskStorage(context: Context) {
                         )
                     )
                 } catch (_: Exception) {
-                    // Ignora el registro corrupto puntual sin tronar el resto
+                    // Ignora entradas corruptas sin interrumpir el flujo
                 }
             }
         } catch (_: Exception) {
             return emptyList()
         }
-        return list
+        return list.distinctBy { it.id }
+    }
+
+    fun deleteTask(taskId: String) {
+        val currentTasks = loadTasks().toMutableList()
+        currentTasks.removeAll { it.id == taskId }
+        saveTasks(currentTasks)
+    }
+
+    fun clearAll() {
+        prefs.edit().remove("saved_tasks").apply()
     }
 }
