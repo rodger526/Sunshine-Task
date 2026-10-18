@@ -1,4 +1,4 @@
-﻿package com.example.sunshine_task.data.repository
+package com.example.sunshine_task.data.repository
 
 import com.example.sunshine_task.data.local.dao.TaskDao
 import com.example.sunshine_task.data.local.mapper.toDomain
@@ -9,32 +9,21 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/** Implementación con Room como única fuente de verdad (offline-first). */
 @Singleton
 class TaskRepositoryImpl @Inject constructor(
     private val taskDao: TaskDao
 ) : TaskRepository {
 
-    override fun getAllTasks(): Flow<List<Task>> {
-        return taskDao.getAllTasks().map { entities ->
-            entities.map { it.toDomain() }
-        }
-    }
+    override fun observeTasks(): Flow<List<Task>> =
+        taskDao.observeAll().map { list -> list.map { it.toDomain() } }
 
-    override fun getTaskById(id: String): Flow<Task?> {
-        return taskDao.getTaskById(id).map { entity ->
-            entity?.toDomain()
-        }
-    }
+    override fun observeTask(taskId: String): Flow<Task?> =
+        taskDao.observeById(taskId).map { it?.toDomain() }
 
-    override suspend fun insertTask(task: Task) {
-        taskDao.insertTask(task.toEntity())
-    }
+    override suspend fun addTask(task: Task) = taskDao.insert(task.toEntity())
 
-    override suspend fun updateTask(task: Task) {
-        taskDao.updateTask(task.toEntity())
-    }
+    override suspend fun updateTask(task: Task) = taskDao.update(task.toEntity())
 
-    override suspend fun deleteTask(id: String) {
-        taskDao.deleteTask(id)
-    }
+    override suspend fun deleteTask(taskId: String) = taskDao.deleteById(taskId)
 }

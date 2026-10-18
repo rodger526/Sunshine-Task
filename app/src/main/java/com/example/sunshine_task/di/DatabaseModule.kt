@@ -1,4 +1,4 @@
-﻿package com.example.sunshine_task.di
+package com.example.sunshine_task.di
 
 import android.content.Context
 import androidx.room.Room
@@ -17,16 +17,9 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
-        return Room.databaseBuilder(
-            context,
-            AppDatabase::class.java,
-            "sunshine_task.db"
-        ).fallbackToDestructiveMigration().build()
-    }
+    fun provideDatabase(@ApplicationContext context: Context): AppDatabase =
+        Room.databaseBuilder(context, AppDatabase::class.java, "sunshine_task.db").build()
 
     @Provides
-    fun provideTaskDao(database: AppDatabase): TaskDao {
-        return database.taskDao()
-    }
+    fun provideTaskDao(database: AppDatabase): TaskDao = database.taskDao()
 }

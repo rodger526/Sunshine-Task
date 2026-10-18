@@ -1,4 +1,4 @@
-﻿package com.example.sunshine_task.data.local.dao
+package com.example.sunshine_task.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
@@ -10,18 +10,21 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface TaskDao {
-    @Query("SELECT * FROM tasks ORDER BY createdAt DESC")
-    fun getAllTasks(): Flow<List<TaskEntity>>
 
-    @Query("SELECT * FROM tasks WHERE id = :id")
-    fun getTaskById(id: String): Flow<TaskEntity?>
+    // Lecturas reactivas: Room vuelve a emitir cada vez que cambia la tabla.
+    @Query("SELECT * FROM tasks ORDER BY createdAt ASC")
+    fun observeAll(): Flow<List<TaskEntity>>
 
+    @Query("SELECT * FROM tasks WHERE id = :taskId")
+    fun observeById(taskId: String): Flow<TaskEntity?>
+
+    // Escrituras: funciones suspend, Room las ejecuta fuera del hilo principal.
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertTask(task: TaskEntity)
+    suspend fun insert(task: TaskEntity)
 
     @Update
-    suspend fun updateTask(task: TaskEntity)
+    suspend fun update(task: TaskEntity)
 
-    @Query("DELETE FROM tasks WHERE id = :id")
-    suspend fun deleteTask(id: String)
+    @Query("DELETE FROM tasks WHERE id = :taskId")
+    suspend fun deleteById(taskId: String)
 }
