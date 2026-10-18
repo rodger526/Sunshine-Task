@@ -1,28 +1,12 @@
-package com.example.sunshine_task.data.repository
+﻿package com.example.sunshine_task.data.repository
 
 import com.example.sunshine_task.data.models.Task
+import kotlinx.coroutines.flow.Flow
 
-class TaskRepository {
-
-    private val tasks = mutableListOf<Task>()
-
-    fun getTasks(): List<Task> {
-        return tasks.toList()
-    }
-
-    fun addTask(task: Task) {
-        tasks.add(task)
-    }
-
-    fun updateTask(task: Task) {
-        val index = tasks.indexOfFirst { it.id == task.id }
-
-        if (index != -1) {
-            tasks[index] = task
-        }
-    }
-
-    fun deleteTask(taskId: String) {
-        tasks.removeAll { it.id == taskId }
-    }
+interface TaskRepository {
+    fun getAllTasks(): Flow<List<Task>>
+    fun getTaskById(id: String): Flow<Task?>
+    suspend fun insertTask(task: Task)
+    suspend fun updateTask(task: Task)
+    suspend fun deleteTask(id: String)
 }
