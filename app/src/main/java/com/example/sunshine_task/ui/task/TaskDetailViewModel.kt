@@ -98,6 +98,22 @@ class TaskDetailViewModel @Inject constructor(
         }
     }
 
+    fun editTask(title: String, description: String, category: String) {
+        val task = currentTask ?: return
+        val cleanTitle = title.trim()
+        if (cleanTitle.isEmpty()) return
+
+        viewModelScope.launch {
+            repository.updateTask(
+                task.copy(
+                    title = cleanTitle,
+                    description = description,
+                    category = category.ifBlank { "General" }
+                )
+            )
+        }
+    }
+
     fun addAttachments(items: List<TaskAttachment>) {
         val merged = (_attachments.value + items).distinctBy { it.uri }
         attachmentStorage.saveAttachments(taskId, merged)

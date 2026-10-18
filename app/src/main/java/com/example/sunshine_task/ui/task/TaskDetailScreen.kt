@@ -89,6 +89,7 @@ fun TaskDetailRoute(
                 onBack = onBack,
                 onToggleStatus = viewModel::toggleStatus,
                 onDeleteTask = viewModel::deleteTask,
+                onUpdateTask = viewModel::editTask,
                 onAttachClick = { picker.launch(arrayOf("*/*")) },
                 onOpenAttachment = { openAttachment(context, it) },
                 onRemoveAttachment = viewModel::removeAttachment,
@@ -142,12 +143,14 @@ fun TaskDetailContent(
     onBack: () -> Unit,
     onToggleStatus: () -> Unit,
     onDeleteTask: () -> Unit,
+    onUpdateTask: (title: String, description: String, category: String) -> Unit,
     onAttachClick: () -> Unit,
     onOpenAttachment: (TaskAttachment) -> Unit,
     onRemoveAttachment: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    var showEditDialog by rememberSaveable { mutableStateOf(false) }
 
     if (showDeleteDialog) {
         DeleteTaskDialog(
@@ -157,6 +160,17 @@ fun TaskDetailContent(
                 onDeleteTask()
             },
             onDismiss = { showDeleteDialog = false }
+        )
+    }
+
+    if (showEditDialog) {
+        EditTaskDialog(
+            task = task,
+            onSave = { newTitle, newDescription, newCategory ->
+                showEditDialog = false
+                onUpdateTask(newTitle, newDescription, newCategory)
+            },
+            onDismiss = { showEditDialog = false }
         )
     }
 
@@ -170,6 +184,9 @@ fun TaskDetailContent(
                     }
                 },
                 actions = {
+                    TextButton(onClick = { showEditDialog = true }) {
+                        Text("Editar", color = MaterialTheme.colorScheme.primary)
+                    }
                     TextButton(onClick = { showDeleteDialog = true }) {
                         Text("Eliminar", color = MaterialTheme.colorScheme.error)
                     }
