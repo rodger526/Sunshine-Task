@@ -3,16 +3,20 @@ package com.example.sunshine_task.ui.task
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.sunshine_task.data.local.AttachmentStorage
 import com.example.sunshine_task.data.models.Priority
 import com.example.sunshine_task.data.models.Status
 import com.example.sunshine_task.data.models.Task
+import com.example.sunshine_task.data.models.TaskAttachment
 import com.example.sunshine_task.data.repository.TaskRepository
 import com.example.sunshine_task.ui.navigation.Routes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -33,10 +37,10 @@ sealed interface TaskDetailEvent {
 @HiltViewModel
 class TaskDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val repository: TaskRepository
+    private val repository: TaskRepository,
+    private val attachmentStorage: AttachmentStorage
 ) : ViewModel() {
 
-    // Hilt entrega los argumentos de navegación a través de SavedStateHandle.
     private val taskId: String = checkNotNull(savedStateHandle[Routes.TASK_ID_ARG])
 
     val uiState: StateFlow<TaskDetailUiState> = repository.observeTask(taskId)
@@ -50,6 +54,9 @@ class TaskDetailViewModel @Inject constructor(
             started = SharingStarted.WhileSubscribed(5_000),
             initialValue = TaskDetailUiState.Loading
         )
+
+    private val _attachments = MutableStateFlow(attachmentStorage.loadAttachments(taskId))
+    val attachments: StateFlow<List<TaskAttachment>> = _attachments.asStateFlow()
 
     private val _events = Channel<TaskDetailEvent>(Channel.BUFFERED)
     val events: Flow<TaskDetailEvent> = _events.receiveAsFlow()
@@ -91,8 +98,20 @@ class TaskDetailViewModel @Inject constructor(
         }
     }
 
+    fun addAttachments(items: List<TaskAttachment>) {
+        val merged = (_attachments.value + items).distinctBy { it.uri }
+        attachmentStorage.saveAttachments(taskId, merged)
+        _attachments.value = merged
+    }
+
+    fun removeAttachment(uri: String) {
+        attachmentStorage.removeAttachment(taskId, uri)
+        _attachments.value = attachmentStorage.loadAttachments(taskId)
+    }
+
     fun deleteTask() {
         viewModelScope.launch {
+            attachmentStorage.clearAttachments(taskId)
             repository.deleteTask(taskId)
             _events.send(TaskDetailEvent.TaskDeleted)
         }

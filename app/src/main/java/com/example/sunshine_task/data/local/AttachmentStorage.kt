@@ -1,25 +1,30 @@
 package com.example.sunshine_task.data.local
 
 import android.content.Context
+import com.example.sunshine_task.data.models.TaskAttachment
+import dagger.hilt.android.qualifiers.ApplicationContext
 import org.json.JSONArray
 import org.json.JSONObject
-import com.example.sunshine_task.data.models.TaskAttachment
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class AttachmentStorage(context: Context) {
+@Singleton
+class AttachmentStorage @Inject constructor(
+    @ApplicationContext context: Context
+) {
     private val prefs = context.getSharedPreferences("sunshine_task_attachments", Context.MODE_PRIVATE)
 
     fun saveAttachments(taskId: String, attachments: List<TaskAttachment>) {
-        val uniqueAttachments = attachments.distinctBy { it.uri }
-
         val array = JSONArray()
-        uniqueAttachments.forEach { item ->
-            val obj = JSONObject().apply {
-                put("uri", item.uri)
-                put("name", item.name)
-                put("mimeType", item.mimeType)
-                put("sizeText", item.sizeText)
-            }
-            array.put(obj)
+        attachments.distinctBy { it.uri }.forEach { item ->
+            array.put(
+                JSONObject().apply {
+                    put("uri", item.uri)
+                    put("name", item.name)
+                    put("mimeType", item.mimeType)
+                    put("sizeText", item.sizeText)
+                }
+            )
         }
         prefs.edit().putString("attachments_$taskId", array.toString()).apply()
     }
@@ -50,9 +55,7 @@ class AttachmentStorage(context: Context) {
     }
 
     fun removeAttachment(taskId: String, uriToRemove: String) {
-        val current = loadAttachments(taskId).toMutableList()
-        current.removeAll { it.uri == uriToRemove }
-        saveAttachments(taskId, current)
+        saveAttachments(taskId, loadAttachments(taskId).filter { it.uri != uriToRemove })
     }
 
     fun clearAttachments(taskId: String) {
