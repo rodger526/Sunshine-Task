@@ -1,98 +1,234 @@
-﻿package com.example.sunshine_task.ui.task
+package com.example.sunshine_task.ui.task
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import com.example.sunshine_task.data.models.Priority
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.sunshine_task.model.TaskCategory
-import com.example.sunshine_task.model.TaskPriority
+import java.text.SimpleDateFormat
+import java.util.*
 
+/** Composable con estado (Route): conoce el ViewModel y reacciona a eventos puntuales. */
 @Composable
 fun CreateTaskRoute(
-    onNavigateBack: () -> Unit,
+    onTaskCreated: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier,
     viewModel: CreateTaskViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val currentOnTaskCreated by rememberUpdatedState(onTaskCreated)
 
-    LaunchedEffect(uiState.isSaved) {
-        if (uiState.isSaved) {
-            onNavigateBack()
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                CreateTaskEvent.TaskCreated -> currentOnTaskCreated()
+            }
         }
     }
 
-    CreateTaskScreenContent(
+    CreateTaskContent(
         uiState = uiState,
-        onTitleChange = viewModel::onTitleChange,
-        onDescriptionChange = viewModel::onDescriptionChange,
-        onCategoryChange = viewModel::onCategoryChange,
-        onPriorityChange = viewModel::onPriorityChange,
-        onSaveTask = viewModel::saveTask,
-        onNavigateBack = onNavigateBack
+        onSave = viewModel::createTask,
+        onBack = onBack,
+        modifier = modifier
     )
 }
 
+/** Vista sin estado (Content): recibe estado inmutable y lambdas, nunca el ViewModel. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CreateTaskScreenContent(
+fun CreateTaskContent(
     uiState: CreateTaskUiState,
-    onTitleChange: (String) -> Unit,
-    onDescriptionChange: (String) -> Unit,
-    onCategoryChange: (TaskCategory) -> Unit,
-    onPriorityChange: (TaskPriority) -> Unit,
-    onSaveTask: () -> Unit,
-    onNavigateBack: () -> Unit
+    onSave: (title: String, description: String, category: String, priority: Priority, dueDate: String) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Nueva Tarea") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
+    var title by remember { mutableStateOf("") }
+    var description by remember { mutableStateOf("") }
+    var category by remember { mutableStateOf("General") }
+    var priority by remember { mutableStateOf(Priority.MEDIA) }
+    var dueDate by remember { mutableStateOf("") }
+
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState()
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDatePicker = false
+                        datePickerState.selectedDateMillis?.let { millis ->
+                            val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+                                timeZone = TimeZone.getTimeZone("UTC")
+                            }
+                            dueDate = formatter.format(Date(millis))
+                        }
                     }
+                ) {
+                    Text("OK")
                 }
-            )
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("Cancel")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
         }
-    ) { paddingValues ->
+    }
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth(0.92f)
+            .wrapContentHeight()
+            .verticalScroll(rememberScrollState()),
+        shape = MaterialTheme.shapes.extraLarge,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+    ) {
         Column(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .fillMaxWidth()
+                .padding(20.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            Text(
+                text = "Nueva tarea",
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+
             OutlinedTextField(
-                value = uiState.title,
-                onValueChange = onTitleChange,
+                value = title,
+                onValueChange = { title = it },
                 label = { Text("Título") },
                 modifier = Modifier.fillMaxWidth(),
-                singleLine = true
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
             )
 
             OutlinedTextField(
-                value = uiState.description,
-                onValueChange = onDescriptionChange,
+                value = description,
+                onValueChange = { description = it },
                 label = { Text("Descripción") },
                 modifier = Modifier.fillMaxWidth(),
-                minLines = 3
+                shape = MaterialTheme.shapes.medium,
+                maxLines = 3
             )
 
-            Button(
-                onClick = onSaveTask,
+            OutlinedTextField(
+                value = category,
+                onValueChange = { category = it },
+                label = { Text("Categoría") },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = uiState.title.isNotBlank() && !uiState.isLoading
+                singleLine = true,
+                shape = MaterialTheme.shapes.medium
+            )
+
+            Text("Prioridad", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.onSurface)
+
+            val priorities = listOf(
+                Priority.BAJA to ("Baja" to Color(0xFF10B981)),
+                Priority.MEDIA to ("Media" to Color(0xFF3B82F6)),
+                Priority.ALTA to ("Alta" to Color(0xFFF59E0B)),
+                Priority.URGENTE to ("Urgente" to Color(0xFFEF4444))
+            )
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.size(24.dp))
-                } else {
-                    Text("Guardar Tarea")
+                // Row 1: Baja & Media
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    priorities.take(2).forEach { (p, pair) ->
+                        val (label, color) = pair
+                        OutlinedButton(
+                            onClick = { priority = p },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (priority == p) color.copy(alpha = 0.1f) else Color.Transparent,
+                                contentColor = color
+                            ),
+                            border = BorderStroke(1.dp, color),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
+                // Row 2: Alta & Urgente
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    priorities.drop(2).forEach { (p, pair) ->
+                        val (label, color) = pair
+                        OutlinedButton(
+                            onClick = { priority = p },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (priority == p) color.copy(alpha = 0.1f) else Color.Transparent,
+                                contentColor = color
+                            ),
+                            border = BorderStroke(1.dp, color),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Text(label)
+                        }
+                    }
+                }
+            }
+
+            OutlinedButton(
+                onClick = { showDatePicker = true },
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Text(if (dueDate.isBlank()) "Seleccionar fecha límite" else "Fecha: $dueDate")
+            }
+
+            if (uiState is CreateTaskUiState.Error) {
+                Text(
+                    text = uiState.message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                TextButton(onClick = onBack) {
+                    Text("Cancelar", color = MaterialTheme.colorScheme.primary)
+                }
+                Button(
+                    onClick = {
+                        onSave(title, description, category.ifBlank { "General" }, priority, dueDate)
+                    },
+                    enabled = uiState !is CreateTaskUiState.Saving,
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    Text("Guardar")
                 }
             }
         }
