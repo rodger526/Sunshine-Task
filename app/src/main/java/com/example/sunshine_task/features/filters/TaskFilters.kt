@@ -1,10 +1,8 @@
-﻿package com.example.sunshine_task.features.filters
+package com.example.sunshine_task.features.filters
 
-import com.example.sunshine_task.model.Task
-import com.example.sunshine_task.model.TaskStatus
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.example.sunshine_task.data.models.Status
+import com.example.sunshine_task.data.models.Task
+import java.time.LocalDate
 
 enum class TaskFilter {
     TODAS,
@@ -14,29 +12,23 @@ enum class TaskFilter {
     VENCIDAS
 }
 
+/** Vencida: no está completada y su fecha límite ya pasó (el día de vencimiento no cuenta). */
+fun Task.isOverdue(today: LocalDate = LocalDate.now()): Boolean =
+    status != Status.COMPLETADA &&
+        dueDate.isNotBlank() &&
+        runCatching { LocalDate.parse(dueDate).isBefore(today) }.getOrDefault(false)
+
 object TaskFilters {
-    private val dateFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
     fun filter(tasks: List<Task>, filter: TaskFilter): List<Task> {
-        val today = Date()
+        val today = LocalDate.now()
 
         return when (filter) {
             TaskFilter.TODAS -> tasks
-            TaskFilter.PENDIENTES -> tasks.filter { it.status == TaskStatus.PENDIENTE }
-            TaskFilter.EN_PROGRESO -> tasks.filter { it.status == TaskStatus.EN_PROGRESO }
-            TaskFilter.COMPLETADAS -> tasks.filter { it.status == TaskStatus.COMPLETADA }
-            TaskFilter.VENCIDAS -> tasks.filter { task ->
-                if (task.status == TaskStatus.COMPLETADA || task.dueDate.isNullOrBlank()) {
-                    false
-                } else {
-                    try {
-                        val parsed = dateFormat.parse(task.dueDate)
-                        parsed != null && parsed.before(today)
-                    } catch (_: Exception) {
-                        false
-                    }
-                }
-            }
+            TaskFilter.PENDIENTES -> tasks.filter { it.status == Status.PENDIENTE }
+            TaskFilter.EN_PROGRESO -> tasks.filter { it.status == Status.EN_PROGRESO }
+            TaskFilter.COMPLETADAS -> tasks.filter { it.status == Status.COMPLETADA }
+            TaskFilter.VENCIDAS -> tasks.filter { it.isOverdue(today) }
         }
     }
 }

@@ -1,9 +1,9 @@
-﻿package com.example.sunshine_task.data.local
+package com.example.sunshine_task.data.local
 
 import android.content.Context
 import org.json.JSONArray
 import org.json.JSONObject
-import com.example.sunshine_task.model.TaskAttachment
+import com.example.sunshine_task.data.models.TaskAttachment
 
 class AttachmentStorage(context: Context) {
     private val prefs = context.getSharedPreferences("sunshine_task_attachments", Context.MODE_PRIVATE)

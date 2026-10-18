@@ -1,6 +1,6 @@
-﻿package com.example.sunshine_task.features.search
+package com.example.sunshine_task.features.search
 
-import com.example.sunshine_task.model.Task
+import com.example.sunshine_task.data.models.Task
 
 object TaskSearch {
     fun filter(tasks: List<Task>, query: String): List<Task> {
