@@ -3,9 +3,12 @@ package com.example.sunshine_task.ui.home
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.sunshine_task.data.models.Priority
-import com.example.sunshine_task.data.models.Status
 import com.example.sunshine_task.data.models.Task
 import com.example.sunshine_task.data.repository.TaskRepository
+import com.example.sunshine_task.features.filters.TaskFilter
+import com.example.sunshine_task.features.filters.TaskFilters
+import com.example.sunshine_task.features.search.TaskSearch
+import com.example.sunshine_task.features.statistics.TaskStatisticsCalculator
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -14,7 +17,6 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import java.time.LocalDate
 import javax.inject.Inject
 
 data class HomeFilters(
@@ -54,10 +56,15 @@ class HomeViewModel @Inject constructor(
             repository.observeTasks(),
             filters
         ) { tasks, currentFilters ->
-            val today = LocalDate.now()
+            val stats = TaskStatisticsCalculator.calculate(tasks)
             HomeUiState.Success(
-                tasks = tasks.applyFilters(currentFilters, today),
-                stats = tasks.toStats(today),
+                tasks = applyFilters(tasks, currentFilters),
+                stats = HomeStats(
+                    total = stats.total,
+                    completed = stats.completadas,
+                    pending = stats.pendientes + stats.enProgreso,
+                    overdue = stats.vencidas
+                ),
                 filters = currentFilters
             )
         }
@@ -78,31 +85,22 @@ class HomeViewModel @Inject constructor(
         filters.update { it.copy(priorityFilter = priority) }
 }
 
-private fun Task.isOverdue(today: LocalDate): Boolean =
-    status != Status.COMPLETADA &&
-        dueDate.isNotBlank() &&
-        runCatching { LocalDate.parse(dueDate).isBefore(today) }.getOrDefault(false)
+/** Búsqueda, estado y vencidas se delegan en features/; fecha y prioridad se aplican aquí. */
+private fun applyFilters(tasks: List<Task>, filters: HomeFilters): List<Task> {
+    val searched = TaskSearch.filter(tasks, filters.searchQuery)
 
-private fun List<Task>.toStats(today: LocalDate) = HomeStats(
-    total = size,
-    completed = count { it.status == Status.COMPLETADA },
-    pending = count { it.status == Status.PENDIENTE || it.status == Status.EN_PROGRESO },
-    overdue = count { it.isOverdue(today) }
-)
-
-private fun List<Task>.applyFilters(filters: HomeFilters, today: LocalDate): List<Task> =
-    filter { task ->
-        val matchesSearch =
-            task.title.contains(filters.searchQuery, ignoreCase = true) ||
-                task.description.contains(filters.searchQuery, ignoreCase = true)
-
-        val matchesStatus = when (filters.statusFilter) {
-            "PENDIENTE" -> task.status == Status.PENDIENTE || task.status == Status.EN_PROGRESO
-            "COMPLETADA" -> task.status == Status.COMPLETADA
-            "VENCIDA" -> task.isOverdue(today)
-            else -> true
+    val byStatus = when (filters.statusFilter) {
+        "PENDIENTE" -> {
+            val open = TaskFilters.filter(searched, TaskFilter.PENDIENTES) +
+                TaskFilters.filter(searched, TaskFilter.EN_PROGRESO)
+            searched.filter { it in open }
         }
+        "COMPLETADA" -> TaskFilters.filter(searched, TaskFilter.COMPLETADAS)
+        "VENCIDA" -> TaskFilters.filter(searched, TaskFilter.VENCIDAS)
+        else -> searched
+    }
 
+    return byStatus.filter { task ->
         val matchesDate = filters.dateFilter.isBlank() || task.dueDate == filters.dateFilter
 
         val matchesPriority = when (filters.priorityFilter) {
@@ -113,5 +111,6 @@ private fun List<Task>.applyFilters(filters: HomeFilters, today: LocalDate): Lis
             else -> true
         }
 
-        matchesSearch && matchesStatus && matchesDate && matchesPriority
+        matchesDate && matchesPriority
     }
+}
