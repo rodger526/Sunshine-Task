@@ -1,4 +1,4 @@
-﻿package com.example.sunshine_task.ui.home
+package com.example.sunshine_task.ui.home
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -6,101 +6,112 @@ import com.example.sunshine_task.data.models.Priority
 import com.example.sunshine_task.data.models.Status
 import com.example.sunshine_task.data.models.Task
 import com.example.sunshine_task.data.repository.TaskRepository
-import com.example.sunshine_task.features.filters.TaskFilter
-import com.example.sunshine_task.features.filters.TaskFilters
-import com.example.sunshine_task.features.search.TaskSearch
-import com.example.sunshine_task.features.statistics.TaskStatisticsCalculator
-import com.example.sunshine_task.features.statistics.TaskStats
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.update
+import java.time.LocalDate
+import javax.inject.Inject
 
-data class HomeUiState(
-    val tasks: List<Task> = emptyList(),
-    val filteredTasks: List<Task> = emptyList(),
+data class HomeFilters(
     val searchQuery: String = "",
-    val selectedFilter: TaskFilter = TaskFilter.TODAS,
-    val selectedPriority: Priority? = null,
-    val selectedDate: String = "",
-    val stats: TaskStats = TaskStats(0, 0, 0, 0, 0),
-    val isLoading: Boolean = false
+    val statusFilter: String = "TODAS",
+    val dateFilter: String = "",
+    val priorityFilter: String = "ALL"
 )
 
-class HomeViewModel(
-    private val repository: TaskRepository
+data class HomeStats(
+    val total: Int,
+    val completed: Int,
+    val pending: Int,
+    val overdue: Int
+)
+
+sealed interface HomeUiState {
+    data object Loading : HomeUiState
+    data class Success(
+        val tasks: List<Task>,
+        val stats: HomeStats,
+        val filters: HomeFilters
+    ) : HomeUiState
+    data class Error(val message: String) : HomeUiState
+}
+
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    repository: TaskRepository
 ) : ViewModel() {
 
-    private val _searchQuery = MutableStateFlow("")
-    private val _selectedFilter = MutableStateFlow(TaskFilter.TODAS)
-    private val _selectedPriority = MutableStateFlow<Priority?>(null)
-    private val _selectedDate = MutableStateFlow("")
+    private val filters = MutableStateFlow(HomeFilters())
 
-    val uiState: StateFlow<HomeUiState> = combine(
-        repository.getAllTasks(),
-        _searchQuery,
-        _selectedFilter,
-        _selectedPriority,
-        _selectedDate
-    ) { tasks, query, filter, priority, date ->
-        var list = TaskFilters.filter(tasks, filter)
-        list = TaskSearch.filter(list, query)
-        priority?.let { p ->
-            list = list.filter { it.priority == p }
+    /** Único flujo de estado de la pantalla: Room (Flow) + filtros -> UiState. */
+    val uiState: StateFlow<HomeUiState> =
+        combine<List<Task>, HomeFilters, HomeUiState>(
+            repository.observeTasks(),
+            filters
+        ) { tasks, currentFilters ->
+            val today = LocalDate.now()
+            HomeUiState.Success(
+                tasks = tasks.applyFilters(currentFilters, today),
+                stats = tasks.toStats(today),
+                filters = currentFilters
+            )
         }
-        if (date.isNotBlank()) {
-            list = list.filter { it.dueDate == date }
-        }
-        val stats = TaskStatisticsCalculator.calculate(tasks)
+            .catch { emit(HomeUiState.Error(it.message ?: "No se pudieron cargar las tareas")) }
+            .stateIn(
+                scope = viewModelScope,
+                started = SharingStarted.WhileSubscribed(5_000),
+                initialValue = HomeUiState.Loading
+            )
 
-        HomeUiState(
-            tasks = tasks,
-            filteredTasks = list,
-            searchQuery = query,
-            selectedFilter = filter,
-            selectedPriority = priority,
-            selectedDate = date,
-            stats = stats,
-            isLoading = false
-        )
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(5000),
-        initialValue = HomeUiState(isLoading = true)
-    )
+    fun onSearchQueryChange(query: String) = filters.update { it.copy(searchQuery = query) }
 
-    fun onSearchQueryChanged(query: String) {
-        _searchQuery.value = query
-    }
+    fun onStatusFilterChange(filter: String) = filters.update { it.copy(statusFilter = filter) }
 
-    fun onFilterSelected(filter: TaskFilter) {
-        _selectedFilter.value = filter
-    }
+    fun onDateFilterChange(date: String) = filters.update { it.copy(dateFilter = date) }
 
-    fun onPriorityFilterSelected(priority: Priority?) {
-        _selectedPriority.value = priority
-    }
-
-    fun onDateFilterSelected(date: String) {
-        _selectedDate.value = date
-    }
-
-    fun toggleTaskStatus(task: Task) {
-        viewModelScope.launch {
-            val newStatus = when (task.status) {
-                Status.PENDIENTE -> Status.EN_PROGRESO
-                Status.EN_PROGRESO -> Status.COMPLETADA
-                Status.COMPLETADA -> Status.PENDIENTE
-            }
-            repository.updateTask(task.copy(status = newStatus))
-        }
-    }
-
-    fun deleteTask(taskId: String) {
-        viewModelScope.launch {
-            repository.deleteTask(taskId)
-        }
-    }
+    fun onPriorityFilterChange(priority: String) =
+        filters.update { it.copy(priorityFilter = priority) }
 }
+
+private fun Task.isOverdue(today: LocalDate): Boolean =
+    status != Status.COMPLETADA &&
+        dueDate.isNotBlank() &&
+        runCatching { LocalDate.parse(dueDate).isBefore(today) }.getOrDefault(false)
+
+private fun List<Task>.toStats(today: LocalDate) = HomeStats(
+    total = size,
+    completed = count { it.status == Status.COMPLETADA },
+    pending = count { it.status == Status.PENDIENTE || it.status == Status.EN_PROGRESO },
+    overdue = count { it.isOverdue(today) }
+)
+
+private fun List<Task>.applyFilters(filters: HomeFilters, today: LocalDate): List<Task> =
+    filter { task ->
+        val matchesSearch =
+            task.title.contains(filters.searchQuery, ignoreCase = true) ||
+                task.description.contains(filters.searchQuery, ignoreCase = true)
+
+        val matchesStatus = when (filters.statusFilter) {
+            "PENDIENTE" -> task.status == Status.PENDIENTE || task.status == Status.EN_PROGRESO
+            "COMPLETADA" -> task.status == Status.COMPLETADA
+            "VENCIDA" -> task.isOverdue(today)
+            else -> true
+        }
+
+        val matchesDate = filters.dateFilter.isBlank() || task.dueDate == filters.dateFilter
+
+        val matchesPriority = when (filters.priorityFilter) {
+            "BAJA" -> task.priority == Priority.BAJA
+            "MEDIA" -> task.priority == Priority.MEDIA
+            "ALTA" -> task.priority == Priority.ALTA
+            "URGENTE" -> task.priority == Priority.URGENTE
+            else -> true
+        }
+
+        matchesSearch && matchesStatus && matchesDate && matchesPriority
+    }
